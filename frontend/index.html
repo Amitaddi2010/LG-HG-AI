@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Histopathology AI Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #e0e5ec;
+            min-height: 100vh;
+            color: #2d3748;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            min-height: 100vh;
+        }
+        
+        .sidebar {
+            background: #e0e5ec;
+            padding: 2rem 1.5rem;
+            box-shadow: inset -8px 0 16px rgba(209, 217, 230, 0.5), inset 8px 0 16px rgba(255, 255, 255, 0.7);
+        }
+        
+        .logo {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #4a5568;
+            margin-bottom: 0.5rem;
+        }
+        
+        .logo p {
+            font-size: 0.875rem;
+            color: #718096;
+        }
+        
+        .nav-item {
+            background: #e0e5ec;
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 6px 6px 12px rgba(163, 177, 198, 0.6), -6px -6px 12px rgba(255, 255, 255, 0.5);
+        }
+        
+        .nav-item:hover, .nav-item.active {
+            box-shadow: inset 6px 6px 12px rgba(163, 177, 198, 0.6), inset -6px -6px 12px rgba(255, 255, 255, 0.5);
+        }
+        
+        .main-content {
+            padding: 2rem;
+            overflow-y: auto;
+        }
+        
+        .header {
+            background: #e0e5ec;
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 8px 8px 16px rgba(163, 177, 198, 0.6), -8px -8px 16px rgba(255, 255, 255, 0.5);
+        }
+        
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: #e0e5ec;
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 8px 8px 16px rgba(163, 177, 198, 0.6), -8px -8px 16px rgba(255, 255, 255, 0.5);
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #4299e1;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            font-size: 0.875rem;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .pipeline-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+        
+        .upload-panel, .results-panel {
+            background: #e0e5ec;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 8px 8px 16px rgba(163, 177, 198, 0.6), -8px -8px 16px rgba(255, 255, 255, 0.5);
+        }
+        
+        .upload-area {
+            border: 2px dashed #cbd5e0;
+            border-radius: 12px;
+            padding: 3rem 2rem;
+            text-align: center;
+            margin: 1.5rem 0;
+            transition: all 0.3s ease;
+            background: #e0e5ec;
+        }
+        
+        .upload-area:hover, .upload-area.dragover {
+            border-color: #4299e1;
+            box-shadow: inset 4px 4px 8px rgba(163, 177, 198, 0.3), inset -4px -4px 8px rgba(255, 255, 255, 0.3);
+        }
+        
+        .btn {
+            background: #e0e5ec;
+            border: none;
+            border-radius: 12px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 6px 6px 12px rgba(163, 177, 198, 0.6), -6px -6px 12px rgba(255, 255, 255, 0.5);
+        }
+        
+        .btn:hover:not(:disabled) {
+            box-shadow: inset 6px 6px 12px rgba(163, 177, 198, 0.6), inset -6px -6px 12px rgba(255, 255, 255, 0.5);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .btn-primary {
+            color: #4299e1;
+        }
+        
+        .pipeline-step {
+            background: #e0e5ec;
+            border-radius: 12px;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            display: flex;
+            align-items: center;
+            transition: all 0.5s ease;
+            box-shadow: 4px 4px 8px rgba(163, 177, 198, 0.6), -4px -4px 8px rgba(255, 255, 255, 0.5);
+        }
+        
+        .pipeline-step.processing {
+            box-shadow: inset 4px 4px 8px rgba(163, 177, 198, 0.6), inset -4px -4px 8px rgba(255, 255, 255, 0.5);
+        }
+        
+        .pipeline-step.completed {
+            box-shadow: inset 4px 4px 8px rgba(72, 187, 120, 0.3), inset -4px -4px 8px rgba(255, 255, 255, 0.5);
+        }
+        
+        .step-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e0e5ec;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+            box-shadow: 4px 4px 8px rgba(163, 177, 198, 0.6), -4px -4px 8px rgba(255, 255, 255, 0.5);
+        }
+        
+        .step-icon.processing {
+            animation: pulse 2s infinite;
+        }
+        
+        .step-icon.completed {
+            background: #48bb78;
+            color: white;
+            box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .result-card {
+            background: #e0e5ec;
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+            animation: slideIn 0.5s ease;
+            box-shadow: 8px 8px 16px rgba(163, 177, 198, 0.6), -8px -8px 16px rgba(255, 255, 255, 0.5);
+        }
+        
+        .result-card.hg {
+            border-left: 4px solid #e53e3e;
+        }
+        
+        .result-card.lg {
+            border-left: 4px solid #48bb78;
+        }
+        
+        .preview-image {
+            max-width: 100%;
+            border-radius: 12px;
+            margin: 1rem 0;
+            box-shadow: 4px 4px 8px rgba(163, 177, 198, 0.6), -4px -4px 8px rgba(255, 255, 255, 0.5);
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #e0e5ec;
+            border-radius: 2px;
+            overflow: hidden;
+            box-shadow: inset 2px 2px 4px rgba(163, 177, 198, 0.6);
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4299e1, #48bb78);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        
+        .hidden { display: none; }
+        
+        @media (max-width: 768px) {
+            .dashboard { grid-template-columns: 1fr; }
+            .sidebar { display: none; }
+            .pipeline-section { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="sidebar">
+            <div class="logo">
+                <h1>HistoAI</h1>
+                <p>Pathology Classifier</p>
+            </div>
+            
+            <div class="nav-item active" onclick="showSection('analysis')">
+                <strong>Analysis Pipeline</strong>
+            </div>
+            
+            <div class="nav-item" onclick="showSection('performance')">
+                <strong>Model Performance</strong>
+            </div>
+            
+            <div class="nav-item" onclick="showSection('architecture')">
+                <strong>Architecture</strong>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="header">
+                <h1>Histopathology Classification Dashboard</h1>
+                <p>EfficientNet-B0 powered LG/HG tissue analysis system</p>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value">94%</div>
+                    <div class="stat-label">Accuracy</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">95%</div>
+                    <div class="stat-label">LG Precision</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">93%</div>
+                    <div class="stat-label">HG Precision</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">5-Fold</div>
+                    <div class="stat-label">Cross Validation</div>
+                </div>
+            </div>
+            
+            <div id="analysis" class="section">
+                <div class="pipeline-section">
+                    <div class="upload-panel">
+                        <h3>Image Upload</h3>
+                        <div class="upload-area" id="uploadArea">
+                            <p>Drop histopathology image here</p>
+                            <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                            <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                                Select Image
+                            </button>
+                        </div>
+                        <div id="preview"></div>
+                        <button id="analyzeBtn" class="btn btn-primary" onclick="runPipeline()" disabled>
+                            Start Analysis
+                        </button>
+                    </div>
+                    
+                    <div class="results-panel">
+                        <h3>Processing Pipeline</h3>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        
+                        <div id="pipelineSteps">
+                            <div class="pipeline-step" id="step1">
+                                <div class="step-icon">1</div>
+                                <div>
+                                    <strong>Image Input</strong>
+                                    <div class="step-details">Awaiting image upload</div>
+                                </div>
+                            </div>
+                            
+                            <div class="pipeline-step" id="step2">
+                                <div class="step-icon">2</div>
+                                <div>
+                                    <strong>Preprocessing</strong>
+                                    <div class="step-details">RGB conversion & normalization</div>
+                                </div>
+                            </div>
+                            
+                            <div class="pipeline-step" id="step3">
+                                <div class="step-icon">3</div>
+                                <div>
+                                    <strong>AI Analysis</strong>
+                                    <div class="step-details">EfficientNet-B0 inference</div>
+                                </div>
+                            </div>
+                            
+                            <div class="pipeline-step" id="step4">
+                                <div class="step-icon">4</div>
+                                <div>
+                                    <strong>Classification</strong>
+                                    <div class="step-details">LG/HG prediction</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="results"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="performance" class="section hidden">
+                <div class="result-card">
+                    <h3>Model Performance Metrics</h3>
+                    <div id="performanceReport"></div>
+                </div>
+            </div>
+            
+            <div id="architecture" class="section hidden">
+                <div class="result-card">
+                    <h3>Model Architecture</h3>
+                    <p><strong>Architecture:</strong> EfficientNet-B0</p>
+                    <p><strong>Input Size:</strong> 224×224×3</p>
+                    <p><strong>Training:</strong> 5-Fold Cross-Validation</p>
+                    <p><strong>Optimizer:</strong> Adam (lr=0.0001)</p>
+                    <p><strong>Loss:</strong> CrossEntropyLoss with class weights</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+        
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const preview = document.getElementById('preview');
+        const results = document.getElementById('results');
+        const progressFill = document.getElementById('progressFill');
+        
+        // File handling
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) handleFile(files[0]);
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) handleFile(e.target.files[0]);
+        });
+        
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('Please select an image file');
+                return;
+            }
+            
+            selectedFile = file;
+            analyzeBtn.disabled = false;
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                preview.innerHTML = `<img src="${e.target.result}" class="preview-image" alt="Preview">`;
+                updateStep(1, 'completed', `Image loaded: ${file.name}`);
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        function showSection(sectionName) {
+            document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(sectionName).classList.remove('hidden');
+            event.target.classList.add('active');
+        }
+        
+        function updateStep(stepNum, status, details) {
+            const step = document.getElementById(`step${stepNum}`);
+            const icon = step.querySelector('.step-icon');
+            const detailsEl = step.querySelector('.step-details');
+            
+            step.className = `pipeline-step ${status}`;
+            icon.className = `step-icon ${status}`;
+            
+            if (status === 'completed') {
+                icon.innerHTML = '✓';
+            } else if (status === 'processing') {
+                icon.innerHTML = stepNum;
+            }
+            
+            if (details) detailsEl.textContent = details;
+        }
+        
+        async function runPipeline() {
+            if (!selectedFile) return;
+            
+            analyzeBtn.disabled = true;
+            analyzeBtn.textContent = 'Processing...';
+            results.innerHTML = '';
+            
+            // Reset all steps
+            for (let i = 1; i <= 4; i++) {
+                updateStep(i, '', '');
+            }
+            
+            const formData = new FormData();
+            formData.append('image', selectedFile);
+            
+            try {
+                // Step 2: Preprocessing
+                updateStep(2, 'processing', 'Converting and resizing image...');
+                progressFill.style.width = '25%';
+                await sleep(800);
+                
+                // Step 3: Analysis
+                updateStep(2, 'completed', 'Image preprocessed successfully');
+                updateStep(3, 'processing', 'Running EfficientNet-B0 inference...');
+                progressFill.style.width = '75%';
+                
+                const response = await fetch('/pipeline', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                // Step 4: Results
+                updateStep(3, 'completed', 'AI analysis complete');
+                updateStep(4, 'processing', 'Generating classification...');
+                progressFill.style.width = '100%';
+                await sleep(500);
+                
+                const pipeline = data.pipeline;
+                const resultClass = pipeline.step4_output.class === 1 ? 'hg' : 'lg';
+                
+                updateStep(4, 'completed', `Classified as ${pipeline.step4_output.prediction}`);
+                
+                results.innerHTML = `
+                    <div class="result-card ${resultClass}">
+                        <h4>Classification Result</h4>
+                        <p><strong>Prediction:</strong> ${pipeline.step4_output.prediction}</p>
+                        <p><strong>Confidence:</strong> ${pipeline.step4_output.confidence}</p>
+                        <p><strong>Image Size:</strong> ${pipeline.step1_input.image_size}</p>
+                    </div>
+                `;
+                
+            } catch (error) {
+                results.innerHTML = `
+                    <div class="result-card" style="border-left-color: #e53e3e;">
+                        <h4>Error</h4>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+            
+            analyzeBtn.disabled = false;
+            analyzeBtn.textContent = 'Start Analysis';
+        }
+        
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+        
+        // Load documentation
+        async function loadDocs() {
+            try {
+                const response = await fetch('/docs');
+                const docs = await response.json();
+                
+                document.getElementById('performanceReport').innerHTML = `
+                    <pre style="background: #f7fafc; padding: 1rem; border-radius: 8px; font-size: 0.875rem; overflow-x: auto;">${docs.performance.classification_report}</pre>
+                `;
+            } catch (error) {
+                console.error('Failed to load documentation:', error);
+            }
+        }
+        
+        window.onload = loadDocs;
+    </script>
+</body>
+</html>
